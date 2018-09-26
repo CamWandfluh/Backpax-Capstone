@@ -14,13 +14,13 @@
 /* some starting variables for offsets in the game's memory */
 /* found via CheatEngine */
 /* values are in hex */
-	/* PLAYER */
+/* PLAYER */
 #define POINTER_TO_PLAYER 0x00243DC4
 #define OFFSET_TO_PLAYER_X 0x5DC
 #define OFFSET_TO_PLAYER_Y 0x5E0
 
 #define POINTER_TO_LIVES_STRUCT 0x00170074 // pointer to whatever structure holds the lives for our player
-#define OFFSET_TO_LIVES 0x54
+#define OFFSET_TO_LIVES 0x4
 
 #define ENEMY_COUNTER_ADDRESS 0x00640738
 
@@ -52,7 +52,7 @@ LPCWSTR strToLPCWSTR(const std::string& str)
 	int slength = str.length() + 1;
 	len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), slength, 0, 0);
 	wchar_t* buf = new wchar_t[len];
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), slength, buf, len);	
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), slength, buf, len);
 	return buf;
 }
 
@@ -118,7 +118,7 @@ bool getBaseAddress()
 					// found game process
 					//CloseHandle(gameProcess.handle);
 					gameProcess.gameBaseAddress = mods[i];
-					std::cout << "Found base address : " << std::hex <<gameProcess.gameBaseAddress << std::endl;
+					std::cout << "Found base address : " << std::hex << gameProcess.gameBaseAddress << std::endl;
 					return true;
 				}
 			}
@@ -160,6 +160,7 @@ bool startGame()
 	) == false)
 	{
 		std::cout << "Unable to create the game process." << std::endl;
+		std::cout << "Does GMR.cfg contain the correct path to the executable?" << std::endl;
 		delete[] exePath;
 		return false;
 	}
@@ -171,7 +172,7 @@ bool startGame()
 	gameProcess.processID = p_info.dwProcessId;
 
 	std::cout << "Process ID : ";
-	std::cout << gameProcess.processID<<std::endl;
+	std::cout << gameProcess.processID << std::endl;
 
 	// sleep for 1 second to allow the process to start before getting its address
 	Sleep(1000);
@@ -205,6 +206,7 @@ GameData getDataDWORD(DWORD readAddress)
 		DWORD error = GetLastError();
 		std::cout << "Error Code: " << error << std::endl;
 		data.data_dw = DATA_READ_ERROR;
+		system("pause");
 	}
 	return data;
 }
@@ -231,7 +233,7 @@ float getPlayerX()
 	gameData = getDataDWORD(gameData.data_dw + OFFSET_TO_PLAYER_X);
 
 	// return it as a float
-	return gameData.data_f;	
+	return gameData.data_f;
 }
 
 float getPlayerY()
@@ -260,6 +262,12 @@ boost::python::tuple getPlayerCoords()
 	return boost::python::make_tuple(playerX, playerY);
 }
 
+uint32_t getEnemyCount()
+{
+	GameData gameData = getDataDWORD(ENEMY_COUNTER_ADDRESS + (DWORD)gameProcess.gameBaseAddress);
+	return gameData.data_uint;
+}
+
 /* --------------------- PYTHON MODULES --------------------- */
 
 BOOST_PYTHON_MODULE(GameMemoryReader)
@@ -270,4 +278,5 @@ BOOST_PYTHON_MODULE(GameMemoryReader)
 	def("getPlayerLives", getPlayerLives);
 	def("getPlayerX", getPlayerX);
 	def("getPlayerY", getPlayerY);
+	def("getEnemyCount", getEnemyCount);
 }
