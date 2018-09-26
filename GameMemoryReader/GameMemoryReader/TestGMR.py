@@ -8,6 +8,8 @@ import GameMemoryReader as GMR
 
 if (GMR.startGame() == True):
 	print("Game Started!")
+else:
+	exit()
 
 shouldExit = False
 while shouldExit == False:
