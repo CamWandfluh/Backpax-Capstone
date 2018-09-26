@@ -1,0 +1,12 @@
+This program is used to read from the game's memory at runtime in order to gather input variables such as:
+  ..* the player's location
+  ..* lives remaining
+  ..* enemy locations
+  
+The program is written in C++ and uses the Boost Python library to build a dll that can be converted into a Python module (pyd).
+This allows us to call some low level functions from our Python script.
+
+The program also contains code for starting the game when we want to run our script.
+  
+GMR.cfg should contain the path to the game's executable on your system.
+For our purposes, the executable we are using is testapp.exe, rather than GeometryWars.exe, as the former does not need Steam to launch it.
