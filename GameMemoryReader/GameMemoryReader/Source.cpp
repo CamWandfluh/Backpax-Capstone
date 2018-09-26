@@ -15,12 +15,12 @@
 /* found via CheatEngine */
 /* values are in hex */
 /* PLAYER */
-#define POINTER_TO_PLAYER 0x00243DC4
-#define OFFSET_TO_PLAYER_X 0x5DC
-#define OFFSET_TO_PLAYER_Y 0x5E0
+#define POINTER_TO_PLAYER 0x00170074
+#define OFFSET_TO_PLAYER_X -0x48
+#define OFFSET_TO_PLAYER_Y -0x44
 
 #define POINTER_TO_LIVES_STRUCT 0x00170074 // pointer to whatever structure holds the lives for our player
-#define OFFSET_TO_LIVES 0x4
+#define OFFSET_TO_LIVES 0x54
 
 #define ENEMY_COUNTER_ADDRESS 0x00640738
 
