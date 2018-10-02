@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
+#include <vector>
 
 /* config file */
 #define CONFIG_FILE "./GMR.cfg"
@@ -19,10 +20,19 @@
 #define OFFSET_TO_PLAYER_X -0x48
 #define OFFSET_TO_PLAYER_Y -0x44
 
-#define POINTER_TO_LIVES_STRUCT 0x00170074 // pointer to whatever structure holds the lives for our player
+#define POINTER_TO_LIVES_STRUCT 0x00170074	// pointer to whatever structure holds the lives for our player
 #define OFFSET_TO_LIVES 0x54
 
 #define ENEMY_COUNTER_ADDRESS 0x00640738
+#define POINTER_TO_FIRST_ENEMY 0x00170074	// enemies are stored in a list, one enemy follows directly after another
+#define OFFSET_TO_FIRST_ENEMY_X 0xA8
+#define OFFSET_TO_FIRST_ENEMY_Y 0xAC
+#define OFFSET_TO_FIRST_ENEMY_DIRECTION 0xB0
+#define OFFSET_TO_FIRST_ENEMY_VELOCITY 0xB4
+#define OFFSET_TO_FIRST_ENEMY_ROTATION 0xB8
+#define OFFSET_TO_FIRST_ENEMY_TYPE 0xBC
+#define OFFSET_TO_FIRST_ENEMY_ALIVE_BOOLEAN 0x6C
+#define ENEMY_STRUCT_SIZE 0x88				// size of an enemy, meaning offset from this amount to get the next enemy if we have one's address
 
 
 // error codes
@@ -43,6 +53,7 @@ union GameData
 	DWORD data_dw;
 	float data_f;
 	uint32_t data_uint;
+	bool data_bool;
 };
 
 // convert string to LPCWSTR
@@ -185,7 +196,7 @@ bool startGame()
 // takes the address (relative to the executable) in which to read from
 // returns a DWORD (4 bytes) of data from that address in the executable's memory
 // address to read is NOT relative to the game memory start address
-GameData getDataDWORD(DWORD readAddress)
+GameData getDataFromAddress(DWORD readAddress)
 {
 	DWORD buffer;
 	DWORD numBytesRead = 0;
@@ -219,18 +230,19 @@ void setPlayerLives(uint32_t numLives)
 
 }
 
+DWORD getPlayerBaseAddress()
+{
+	return getDataFromAddress(POINTER_TO_PLAYER + (DWORD)gameProcess.gameBaseAddress).data_dw;
+}
+
 // returns the X coordinate of the player from the game's runtime memory
 float getPlayerX()
 {
 	GameData gameData;
-	// pointer arithemetic to get the value holding the player X value
-	// read memory at pointer location to get memory address of the player
-	// basically: dereferencing a pointer that exists in the address space of the game program
-	gameData = getDataDWORD(POINTER_TO_PLAYER + (DWORD)gameProcess.gameBaseAddress);
 
-	// now use the retrieved address to offset to the player's X location address and read from there
+	// use the retrieved address to offset to the player's X location address and read from there
 	// because it was a pointer and dynamically allocated, the address will not be relative to the game process
-	gameData = getDataDWORD(gameData.data_dw + OFFSET_TO_PLAYER_X);
+	gameData = getDataFromAddress(getPlayerBaseAddress() + OFFSET_TO_PLAYER_X);
 
 	// return it as a float
 	return gameData.data_f;
@@ -240,19 +252,13 @@ float getPlayerY()
 {
 	// same idea as getPlayerX, but using the Y offset
 	GameData gameData;
-	gameData = getDataDWORD(POINTER_TO_PLAYER + (DWORD)gameProcess.gameBaseAddress);
-
-	gameData = getDataDWORD(gameData.data_dw + OFFSET_TO_PLAYER_Y);
-
+	gameData = getDataFromAddress(getPlayerBaseAddress() + OFFSET_TO_PLAYER_Y);
 	return gameData.data_f;
 }
 
-uint32_t getPlayerLives()
+DWORD getEnemyBaseAddress()
 {
-	GameData gameData = getDataDWORD(POINTER_TO_LIVES_STRUCT + (DWORD)gameProcess.gameBaseAddress);
-	gameData = getDataDWORD(gameData.data_dw + OFFSET_TO_LIVES);
-
-	return gameData.data_uint;
+	return getDataFromAddress(POINTER_TO_FIRST_ENEMY + (DWORD)gameProcess.gameBaseAddress).data_dw;
 }
 
 boost::python::tuple getPlayerCoords()
@@ -262,10 +268,98 @@ boost::python::tuple getPlayerCoords()
 	return boost::python::make_tuple(playerX, playerY);
 }
 
+uint32_t getPlayerLives()
+{
+	GameData gameData = getDataFromAddress(POINTER_TO_LIVES_STRUCT + (DWORD)gameProcess.gameBaseAddress);
+	gameData = getDataFromAddress(gameData.data_dw + OFFSET_TO_LIVES);
+
+	return gameData.data_uint;
+}
+
 uint32_t getEnemyCount()
 {
-	GameData gameData = getDataDWORD(ENEMY_COUNTER_ADDRESS + (DWORD)gameProcess.gameBaseAddress);
-	return gameData.data_uint;
+	return getDataFromAddress(ENEMY_COUNTER_ADDRESS + (DWORD)gameProcess.gameBaseAddress).data_uint;
+}
+
+float getEnemyX(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_X + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+float getEnemyY(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_Y + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+float getEnemyDirection(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_DIRECTION + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+float getEnemyVelocity(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_VELOCITY + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+float getEnemyRotation(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_ROTATION + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+// there is a value in the game that is different depending on what type of enemy the data represents
+// use this value to determine exactly what type of enemy we are looking at
+// this is important information because different enemy types exhibit different behavior
+uint32_t getEnemyType(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	// gets as a float but returns as uint to truncate the unnecessary decimal value
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_TYPE + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+}
+
+bool enemyIsAlive(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_ALIVE_BOOLEAN + (enemyIndex * ENEMY_STRUCT_SIZE)).data_bool;
+}
+
+boost::python::tuple getEnemyData(DWORD enemyBaseAddress, size_t enemyIndex)
+{
+	float enemyX = getEnemyX(enemyBaseAddress, enemyIndex);
+	float enemyY = getEnemyY(enemyBaseAddress, enemyIndex);
+	float dir = getEnemyDirection(enemyBaseAddress, enemyIndex);
+	float vel = getEnemyVelocity(enemyBaseAddress, enemyIndex);
+	float rot = getEnemyRotation(enemyBaseAddress, enemyIndex);
+	uint32_t type = getEnemyType(enemyBaseAddress, enemyIndex);
+	return boost::python::make_tuple(enemyX, enemyY, dir, vel, rot, type);
+}
+
+// gets the information of every enemy that is alive in the game and returns it as a list of tuple
+// (x location, y location, direction, velocity, rotation, type)
+boost::python::list getEnemyDataList()
+{
+	/* TODO : a solution to these problems */
+		// there exists the possibility that an enemy could be killed in the time between getting the initial enemy count and finding it
+		// this would cause an infinite loop, or reading out of bounds of the enemy array, as the enemy would never be found as alive and the enemy count would never reach 0 as a result
+
+		// there also exists the possibility that an enemy could spawn after reading the initial count, leading to some enemies that the net does not immeidately see
+			// this is less of a problem, as these enemies would be picked up quickly by the next call of this function
+
+
+	boost::python::list enemyDataList;
+
+	uint32_t enemyCount = getEnemyCount();
+	DWORD enemyBaseAddress = getEnemyBaseAddress();
+
+	for (size_t i = 0; enemyCount > 0; i++)
+	{
+		// check if enemy at index is valid
+		if (true == enemyIsAlive(enemyBaseAddress, i))
+		{
+			// found valid enemy, add to list and decrement search count
+			enemyDataList.append(getEnemyData(enemyBaseAddress, i));
+			enemyCount--;
+		}
+	}
+
+	return enemyDataList;
 }
 
 /* --------------------- PYTHON MODULES --------------------- */
@@ -279,4 +373,5 @@ BOOST_PYTHON_MODULE(GameMemoryReader)
 	def("getPlayerX", getPlayerX);
 	def("getPlayerY", getPlayerY);
 	def("getEnemyCount", getEnemyCount);
+	def("getEnemyDataList", getEnemyDataList);
 }
