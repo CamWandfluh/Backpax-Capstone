@@ -1,3 +1,5 @@
+/* Author: Timothy Shea */
+
 #define BOOST_PYTHON_STATIC_LIB
 #include <boost/python.hpp>
 
@@ -9,34 +11,61 @@
 #include <stdint.h>
 #include <vector>
 
+/*
+ * ALL READS FROM THE GAME'S MEMORY ARE DONE AS A DWORD (4 BYTES)
+*/
+
 /* config file */
 #define CONFIG_FILE "./GMR.cfg"
 
 /* some starting variables for offsets in the game's memory */
 /* found via CheatEngine */
 /* values are in hex */
-/* PLAYER */
-#define POINTER_TO_PLAYER 0x00170074
-#define OFFSET_TO_PLAYER_X -0x48
-#define OFFSET_TO_PLAYER_Y -0x44
-
-#define POINTER_TO_LIVES_STRUCT 0x00170074	// pointer to whatever structure holds the lives for our player
+/* GAME DATA STRUCTURE
+ *	Note that this does not hold the player directly, just information about the player	*/
+#define STATIC_POINTER_TO_GAME_DATA_STRUCT 0x00170074	// pointer used to get to the player data
+//#define OFFSET_TO_PLAYER_POINTER 0x0	// pointer to the player entity, unneeded because the player is the first thing in the game data struct
+#define OFFSET_TO_BOMBS 0x40
 #define OFFSET_TO_LIVES 0x54
+#define OFFSET_TO_SHIELD 0x38
+	/* 4 byte float representing the time remaining on the player's shield */
 
-#define ENEMY_COUNTER_ADDRESS 0x00640738
-#define POINTER_TO_FIRST_ENEMY 0x00170074	// enemies are stored in a list, one enemy follows directly after another
-#define OFFSET_TO_FIRST_ENEMY_X 0xA8
-#define OFFSET_TO_FIRST_ENEMY_Y 0xAC
-#define OFFSET_TO_FIRST_ENEMY_DIRECTION 0xB0
-#define OFFSET_TO_FIRST_ENEMY_VELOCITY 0xB4
-#define OFFSET_TO_FIRST_ENEMY_ROTATION 0xB8
-#define OFFSET_TO_FIRST_ENEMY_TYPE 0xBC
-#define OFFSET_TO_FIRST_ENEMY_ALIVE_BOOLEAN 0x6C
-#define ENEMY_STRUCT_SIZE 0x88				// size of an enemy, meaning offset from this amount to get the next enemy if we have one's address
+/* PLAYER ENTITY
+ *	use the address at POINTER_TO_PLAYER_DATA_STRUCT and add OFFSET_TO_PLAYER_POINTER and read the resulting address to access the player
+ *	the player ship is of the same type as the enemies in the game */
+#define OFFSET_TO_X_LOCATION 0x4
+#define OFFSET_TO_Y_LOCATION 0x8
+#define OFFSET_TO_DIRECTION 0xC
+#define OFFSET_TO_VELOCITY 0x10
+#define OFFSET_TO_ROTATION 0x14
+#define OFFSET_TO_NEXT_ENEMY_DOUBLE_POINTER 0x5C
 
+/* ENEMIES */
+#define ENEMY_COUNTER_STATIC_ADDRESS 0x00240738
+/* enemy type/behavior data/function addresses. Unique value to whatever distinct enemy type occupies that structure
+ *	uncertain if this is data or a function
+ *	can be read to determine the type of enemy */
+#define PINWHEEL 0x004E1444
+#define DIAMOND 0x004E1110
+#define GREEN_SQ 0x004E146C
+#define RED_SQ 0x004E13E4
+#define SMALL_RED_SQ 0x004E1418
+#define RED_CIRCLE 0x004E10E8
+#define SNAKE_HEAD 0x004E13BC
+#define SNAKE_TAIL_PIECE 0x004E135C
+#define RED_SHIP 0x004E12EC
+
+// the number of iterations to search for in the enemy loop until its time to abandon ship if all enemies have not been found
+#define ENTITY_LIST_TIMEOUT 250
+
+// game states
+#define GAME_STATE_STATIC_ADDRESS 0x0023C8C4
+#define GAME_STATE_MAIN_MENU 0
+#define GAME_STATE_PLAYING 2
+#define GAME_STATE_PAUSED 3
 
 // error codes
-#define DATA_READ_ERROR -300;
+#define DATA_READ_ERROR -300
 
 // holder for information related to the game
 // global so as to avoid passsing these values between here and our Python code
@@ -48,6 +77,7 @@ struct GameProcess
 	HMODULE gameBaseAddress;
 } gameProcess;
 
+// union for various data types that can be read from the game
 union GameData
 {
 	DWORD data_dw;
@@ -185,8 +215,8 @@ bool startGame()
 	std::cout << "Process ID : ";
 	std::cout << gameProcess.processID << std::endl;
 
-	// sleep for 1 second to allow the process to start before getting its address
-	Sleep(1000);
+	// sleep for 2 seconds to allow the process to start before getting its address
+	Sleep(2000);
 
 	getBaseAddress();
 
@@ -215,151 +245,206 @@ GameData getDataFromAddress(DWORD readAddress)
 	else
 	{
 		DWORD error = GetLastError();
-		std::cout << "Error Code: " << error << std::endl;
+		std::cout << "Error reading memory.\nError Code: " << error << std::endl;
 		data.data_dw = DATA_READ_ERROR;
-		system("pause");
+		//system("pause");
 	}
 	return data;
 }
 
-// sets the player's lives to the given value
-// used for giving lives to the player for large training sessions
-// hard coded so as to prevent writing to other addresses in the program leading to crashes or other undefined behavior
-void setPlayerLives(uint32_t numLives)
+/* 
+	wraps getDataFromAddress for the purpose of simplifying pointer arithmetic
+		takes a pointer (relative to the game's memory) and returns the address it holds */
+DWORD deref(DWORD pointer)
 {
+	return getDataFromAddress(pointer).data_dw;
+}
 
+// writes to the given address 
+bool writeDataToAddress(LPCVOID data, DWORD writeAddress, SIZE_T numBytesToWrite)
+{
+	SIZE_T numBytesWritten;
+
+	if (WriteProcessMemory(
+		gameProcess.handle,						// handle to the process
+		(LPVOID)writeAddress,					// address to read memory from
+		data,									// buffer to write from
+		numBytesToWrite,						// number of bytes to write
+		&numBytesWritten						// holder for number of bytes that were written (NULL to ignore)
+	))
+	{
+		if (numBytesToWrite != numBytesWritten)
+			return false;	// not all bytes were written
+	}
+	else
+	{
+		DWORD error = GetLastError();
+		std::cout << "Error writing memory.\nError Code: " << error << std::endl;
+		//system("pause");
+		return false;
+	}
+	return true;
+}
+
+uint32_t getGameState()
+{
+	return getDataFromAddress(GAME_STATE_STATIC_ADDRESS + (DWORD)gameProcess.gameBaseAddress).data_uint;
 }
 
 DWORD getPlayerBaseAddress()
 {
-	return getDataFromAddress(POINTER_TO_PLAYER + (DWORD)gameProcess.gameBaseAddress).data_dw;
+	return deref(deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress));
 }
 
-// returns the X coordinate of the player from the game's runtime memory
-float getPlayerX()
+/* sets the player's lives to the given value
+	used for giving lives to the player for large training sessions */
+void setLives(uint32_t numLives)
 {
-	GameData gameData;
+	writeDataToAddress(&numLives, deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_LIVES, sizeof(float));
+}
 
-	// use the retrieved address to offset to the player's X location address and read from there
+// resets the player shield granting the player invincibility until it wears off
+// keep calling this function for godmode
+void resetPlayerShield()
+{
+	/* 4 byte value to set 8 byte shield variable to
+	 *	 seems arbitrary but this value was obtained by looking at the initial value of the shield in the game's memory */
+	float val = 3.33f;
+	writeDataToAddress(&val, deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_SHIELD, sizeof(float));
+}
+
+// returns the X coordinate of an entity from the game's runtime memory. This includes the player
+float getEntityX(DWORD baseAddress)
+{
+	// use the retrieved address to offset to the entity's X location address and read from there
 	// because it was a pointer and dynamically allocated, the address will not be relative to the game process
-	gameData = getDataFromAddress(getPlayerBaseAddress() + OFFSET_TO_PLAYER_X);
-
-	// return it as a float
-	return gameData.data_f;
+	return getDataFromAddress(baseAddress + OFFSET_TO_X_LOCATION).data_f;
 }
 
-float getPlayerY()
+float getEntityY(DWORD baseAddress)
 {
-	// same idea as getPlayerX, but using the Y offset
-	GameData gameData;
-	gameData = getDataFromAddress(getPlayerBaseAddress() + OFFSET_TO_PLAYER_Y);
-	return gameData.data_f;
-}
-
-DWORD getEnemyBaseAddress()
-{
-	return getDataFromAddress(POINTER_TO_FIRST_ENEMY + (DWORD)gameProcess.gameBaseAddress).data_dw;
+	// same idea as getEntityX, but using the Y offset
+	return getDataFromAddress(baseAddress + OFFSET_TO_Y_LOCATION).data_f;
 }
 
 boost::python::tuple getPlayerCoords()
 {
-	float playerX = getPlayerX();
-	float playerY = getPlayerY();
+	DWORD playerBaseAddress = getPlayerBaseAddress();
+	float playerX = getEntityX(playerBaseAddress);
+	float playerY = getEntityY(playerBaseAddress);
 	return boost::python::make_tuple(playerX, playerY);
 }
 
 uint32_t getPlayerLives()
 {
-	GameData gameData = getDataFromAddress(POINTER_TO_LIVES_STRUCT + (DWORD)gameProcess.gameBaseAddress);
-	gameData = getDataFromAddress(gameData.data_dw + OFFSET_TO_LIVES);
-
-	return gameData.data_uint;
+	return getDataFromAddress(deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_LIVES).data_uint;
 }
 
 uint32_t getEnemyCount()
 {
-	return getDataFromAddress(ENEMY_COUNTER_ADDRESS + (DWORD)gameProcess.gameBaseAddress).data_uint;
+		return getDataFromAddress(ENEMY_COUNTER_STATIC_ADDRESS + (DWORD)gameProcess.gameBaseAddress).data_uint;
 }
 
-float getEnemyX(DWORD enemyBaseAddress, size_t enemyIndex)
+float getEntityDirection(DWORD baseAddress)
 {
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_X + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+	return getDataFromAddress(baseAddress + OFFSET_TO_DIRECTION).data_f;
 }
 
-float getEnemyY(DWORD enemyBaseAddress, size_t enemyIndex)
+float getEntityVelocity(DWORD baseAddress)
 {
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_Y + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+	return getDataFromAddress(baseAddress + OFFSET_TO_VELOCITY).data_f;
 }
 
-float getEnemyDirection(DWORD enemyBaseAddress, size_t enemyIndex)
+float getEntityRotation(DWORD baseAddress)
 {
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_DIRECTION + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
+	return getDataFromAddress(baseAddress + OFFSET_TO_ROTATION).data_f;
 }
 
-float getEnemyVelocity(DWORD enemyBaseAddress, size_t enemyIndex)
+/* returns a signed int representing the type of entity, -1 for unknown type*/
+int32_t getEntityType(DWORD baseAddress)
 {
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_VELOCITY + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
-}
+	/* get the type from the enemy struct (0 offset) */
+	DWORD hexType = getDataFromAddress(baseAddress).data_dw;
 
-float getEnemyRotation(DWORD enemyBaseAddress, size_t enemyIndex)
-{
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_ROTATION + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
-}
-
-// there is a value in the game that is different depending on what type of enemy the data represents
-// use this value to determine exactly what type of enemy we are looking at
-// this is important information because different enemy types exhibit different behavior
-uint32_t getEnemyType(DWORD enemyBaseAddress, size_t enemyIndex)
-{
-	// gets as a float but returns as uint to truncate the unnecessary decimal value
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_TYPE + (enemyIndex * ENEMY_STRUCT_SIZE)).data_f;
-}
-
-bool enemyIsAlive(DWORD enemyBaseAddress, size_t enemyIndex)
-{
-	return getDataFromAddress(enemyBaseAddress + OFFSET_TO_FIRST_ENEMY_ALIVE_BOOLEAN + (enemyIndex * ENEMY_STRUCT_SIZE)).data_bool;
-}
-
-boost::python::tuple getEnemyData(DWORD enemyBaseAddress, size_t enemyIndex)
-{
-	float enemyX = getEnemyX(enemyBaseAddress, enemyIndex);
-	float enemyY = getEnemyY(enemyBaseAddress, enemyIndex);
-	float dir = getEnemyDirection(enemyBaseAddress, enemyIndex);
-	float vel = getEnemyVelocity(enemyBaseAddress, enemyIndex);
-	float rot = getEnemyRotation(enemyBaseAddress, enemyIndex);
-	uint32_t type = getEnemyType(enemyBaseAddress, enemyIndex);
-	return boost::python::make_tuple(enemyX, enemyY, dir, vel, rot, type);
-}
-
-// gets the information of every enemy that is alive in the game and returns it as a list of tuple
-// (x location, y location, direction, velocity, rotation, type)
-boost::python::list getEnemyDataList()
-{
-	/* TODO : a solution to these problems */
-		// there exists the possibility that an enemy could be killed in the time between getting the initial enemy count and finding it
-		// this would cause an infinite loop, or reading out of bounds of the enemy array, as the enemy would never be found as alive and the enemy count would never reach 0 as a result
-
-		// there also exists the possibility that an enemy could spawn after reading the initial count, leading to some enemies that the net does not immeidately see
-			// this is less of a problem, as these enemies would be picked up quickly by the next call of this function
-
-
-	boost::python::list enemyDataList;
-
-	uint32_t enemyCount = getEnemyCount();
-	DWORD enemyBaseAddress = getEnemyBaseAddress();
-
-	for (size_t i = 0; enemyCount > 0; i++)
+	/* look up entity type and return */
+	switch (hexType)
 	{
-		// check if enemy at index is valid
-		if (true == enemyIsAlive(enemyBaseAddress, i))
-		{
-			// found valid enemy, add to list and decrement search count
-			enemyDataList.append(getEnemyData(enemyBaseAddress, i));
-			enemyCount--;
-		}
+	case PINWHEEL:
+		return 0;
+
+	case DIAMOND:
+		return 1;
+
+	case GREEN_SQ:
+		return 2;
+
+	case RED_SQ:
+		return 3;
+
+	case SMALL_RED_SQ:
+		return 4;
+
+	case RED_CIRCLE:
+		return 5;
+
+	case SNAKE_HEAD:
+		return 6;
+
+	case SNAKE_TAIL_PIECE:
+		return 7;
+
+	case RED_SHIP:
+		return 8;
+
+	default:
+		std::cout << "Unknown enemy type encountered. Its behavior function address is " << std::hex << hexType << std::endl;
+		return -1; // unknown type
+	}
+}
+
+boost::python::tuple getEnemyData(DWORD enemyBaseAddress)
+{
+	int32_t type = getEntityType(enemyBaseAddress);
+	float enemyX = getEntityX(enemyBaseAddress);
+	float enemyY = getEntityY(enemyBaseAddress);
+	float dir = getEntityDirection(enemyBaseAddress);
+	float vel = getEntityVelocity(enemyBaseAddress);
+	float rot = getEntityRotation(enemyBaseAddress);
+	return boost::python::make_tuple(type, enemyX, enemyY, dir, vel, rot);
+}
+
+//// gets the information of every enemy that is alive in the game and returns it as a list of tuple
+//// (x location, y location, direction, velocity, rotation, type)
+boost::python::list getEnemyList()
+{
+	boost::python::list enemyList;
+
+	/* the player is the head of the list that holds the enemies
+	 *	at offest 0x5C there is a pointer which points to another pointer that points to the next enemy
+		*	if this enemy address is nullptr (0x00000000), then end of the list
+	 *	enemies are removed from the linked list when they are destroyed, and the hole is closed
+	*/
+
+	/* access head of list (the player) */
+	DWORD currentBaseAddress = getPlayerBaseAddress();
+	DWORD nextEntityPtr;
+
+	for (size_t i = 0; i < ENTITY_LIST_TIMEOUT; i++)
+	{
+		// get next entity pointer
+		nextEntityPtr = deref(currentBaseAddress + OFFSET_TO_NEXT_ENEMY_DOUBLE_POINTER);
+
+		// dereference enemy pointer to get to the base address of the next entity and move to it
+		currentBaseAddress = deref(nextEntityPtr);
+
+		if (0x00000000 == currentBaseAddress) // if currentBaseAddress == nullptr
+			return enemyList; // end of list
+
+		//else, read entity data and add to the list
+		enemyList.append(getEnemyData(currentBaseAddress));
 	}
 
-	return enemyDataList;
+	return enemyList;
 }
 
 /* --------------------- PYTHON MODULES --------------------- */
@@ -370,8 +455,8 @@ BOOST_PYTHON_MODULE(GameMemoryReader)
 	def("startGame", startGame);
 	def("getPlayerCoords", getPlayerCoords);
 	def("getPlayerLives", getPlayerLives);
-	def("getPlayerX", getPlayerX);
-	def("getPlayerY", getPlayerY);
 	def("getEnemyCount", getEnemyCount);
-	def("getEnemyDataList", getEnemyDataList);
+	def("getEnemyList", getEnemyList);
+	def("getGameState", getGameState);
+	def("resetPlayerShield", resetPlayerShield);
 }
