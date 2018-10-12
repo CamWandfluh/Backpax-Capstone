@@ -54,6 +54,8 @@
 #define SNAKE_HEAD 0x004E13BC
 #define SNAKE_TAIL_PIECE 0x004E135C
 #define RED_SHIP 0x004E12EC
+#define BLUE_CIRCLE 0x004e12a8 // these spawn when the red circles detonate
+#define BLUE_TRIANGLE 0x004e1194
 
 // the number of iterations to search for in the enemy loop until its time to abandon ship if all enemies have not been found
 #define ENTITY_LIST_TIMEOUT 250
@@ -396,6 +398,12 @@ int32_t getEntityType(DWORD baseAddress)
 	case RED_SHIP:
 		return 8;
 
+	case BLUE_CIRCLE:
+		return 9;
+
+	case BLUE_TRIANGLE:
+		return 10;
+
 	default:
 		std::cout << "Unknown enemy type encountered. Its behavior function address is " << std::hex << hexType << std::endl;
 		return -1; // unknown type
@@ -413,8 +421,8 @@ boost::python::tuple getEnemyData(DWORD enemyBaseAddress)
 	return boost::python::make_tuple(type, enemyX, enemyY, dir, vel, rot);
 }
 
-//// gets the information of every enemy that is alive in the game and returns it as a list of tuple
-//// (x location, y location, direction, velocity, rotation, type)
+// gets the information of every enemy that is alive in the game and returns it as a list of tuple
+// (x location, y location, direction, velocity, rotation, type)
 boost::python::list getEnemyList()
 {
 	boost::python::list enemyList;
