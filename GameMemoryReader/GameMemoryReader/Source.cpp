@@ -18,9 +18,10 @@
 /* config file */
 #define CONFIG_FILE "./GMR.cfg"
 
-/* some starting variables for offsets in the game's memory */
-/* found via CheatEngine */
-/* values are in hex */
+/* locations for variables in the game's memory
+ *	found via CheatEngine
+ *	values are in hex */
+
 /* GAME DATA STRUCTURE
  *	Note that this does not hold the player directly, just information about the player	*/
 #define STATIC_POINTER_TO_GAME_DATA_STRUCT 0x00170074	// pointer used to get to the player data
@@ -29,6 +30,11 @@
 #define OFFSET_TO_LIVES 0x54
 #define OFFSET_TO_SHIELD 0x38
 	/* 4 byte float representing the time remaining on the player's shield */
+/* HUD. These offsets are relative to the game data struct.
+ *	These coordinates represent the diamond indicator of the mouse cursor when the aim mode is set to "TARGET"
+ *	Use these coordinates instead of coordinates returned by some mouse cursor read function to get a more accurate reading of where the player is looking */
+#define OFFSET_TO_CURSOR_X 0x2C
+#define OFFSET_TO_CURSOR_Y 0x30
 
 /* PLAYER ENTITY
  *	use the address at POINTER_TO_PLAYER_DATA_STRUCT and add OFFSET_TO_PLAYER_POINTER and read the resulting address to access the player
@@ -172,12 +178,12 @@ bool getBaseAddress()
 	return false;
 }
 
-// starts the game and fills in the handle to the process as well as the process id
-bool startGame()
+// launches the game and fills in the handle to the process as well as the process id
+bool launchGame()
 {
 	/* REWRITE TIME */
 	/* because steam does not like me running an exe not through steam,  */
-	std::cout << "Starting game ..." << std::endl;
+	std::cout << "Launching game ..." << std::endl;
 
 	STARTUPINFO su_info;
 	PROCESS_INFORMATION p_info;
@@ -460,7 +466,7 @@ boost::python::list getEnemyList()
 BOOST_PYTHON_MODULE(GameMemoryReader)
 {
 	using namespace boost::python;
-	def("startGame", startGame);
+	def("launchGame", launchGame);
 	def("getPlayerCoords", getPlayerCoords);
 	def("getPlayerLives", getPlayerLives);
 	def("getEnemyCount", getEnemyCount);

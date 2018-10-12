@@ -3,13 +3,20 @@ from enum import Enum
 from os import system
 from time import sleep
 
+# RESULTS FROM SCANNING FOR UNKNOWN ENEMY TYPES
+# BLUE CIRCLES THAT SPAWN WHEN RED CIRCLES DETONATE : 4e12a8
+# another type : 4e016a ???
+# small blue triangle : 4e1194
+# 4e008e ????
+# 4e030e ????
+
 class GameState(Enum):
 	MAIN_MENU = 0
 	PLAYING = 2
 	PAUSED = 3
 
-if (GMR.startGame() == True):
-	print("Game Started!")
+if (GMR.launchGame() == True):
+	print("Game successfully launched...")
 else:
 	exit()
 
@@ -54,7 +61,11 @@ while shouldExit == False:
 
 		enemyList = GMR.getEnemyList()
 		if len(enemyList) > 0:
-			print("First enemy: ",enemyList[0]) 
+			#print("First enemy: ",enemyList[0])
+			for i, enemy in enumerate(enemyList):
+				print("Enemy ", i, " at: (", enemy[1], ", ", enemy[2],")")
+				if enemy[0] == -1:
+					system("pause") # encountered unknown enemy, pause the terminal to view its type
 
 		#input()
 
