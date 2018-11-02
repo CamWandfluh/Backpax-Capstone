@@ -22,6 +22,8 @@
  *	found via CheatEngine
  *	values are in hex */
 
+#define SCORE_STATIC_ADDRESS 0x0023C890
+
 /* GAME DATA STRUCTURE
  *	Note that this does not hold the player directly, just information about the player	*/
 #define STATIC_POINTER_TO_GAME_DATA_STRUCT 0x00170074	// pointer used to get to the player data
@@ -343,6 +345,11 @@ boost::python::tuple getPlayerCoords()
 	return boost::python::make_tuple(playerX, playerY);
 }
 
+uint32_t getScore()
+{
+	return getDataFromAddress(SCORE_STATIC_ADDRESS + (DWORD)gameProcess.gameBaseAddress).data_uint;
+}
+
 uint32_t getPlayerLives()
 {
 	return getDataFromAddress(deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_LIVES).data_uint;
@@ -467,10 +474,12 @@ BOOST_PYTHON_MODULE(GameMemoryReader)
 {
 	using namespace boost::python;
 	def("launchGame", launchGame);
+	def("getScore", getScore);
 	def("getPlayerCoords", getPlayerCoords);
 	def("getPlayerLives", getPlayerLives);
 	def("getEnemyCount", getEnemyCount);
 	def("getEnemyList", getEnemyList);
 	def("getGameState", getGameState);
 	def("resetPlayerShield", resetPlayerShield);
+	def("setLives", setLives);
 }
