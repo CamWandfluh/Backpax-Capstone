@@ -21,7 +21,7 @@ import ctypes
 
 			# problem: still have to move the mouse to coordinates in screen space
 
-			# solution: 
+			# solution:
 			#	instead of using win32gui screen coordinates,
 			#		write to program memory the new coordinates to shoot to
 			#			possible problem of the location constantly reseting to mouse position
@@ -44,7 +44,7 @@ class MOUSEINPUT(ctypes.Structure):
 				('dy', LONG), 					# y pos of the mouse
 				('mouseData', DWORD),
 				('flags', DWORD),
-				('time', DWORD),				
+				('time', DWORD),
 				('dwExtraInfo', ULONG_PTR)]
 
 # tagKEYBDINPUT
@@ -94,6 +94,10 @@ DIR_W = 0x11
 DIR_A = 0x1E
 DIR_S = 0x1F
 DIR_D = 0x20
+DIR_UP = 0xC8
+DIR_LEFT = 0xCB
+DIR_RIGHT = 0xCD
+DIR_DOWN = 0xD0
 DIR_SPACE = 0x39
 
 # defines for input type
@@ -112,7 +116,7 @@ def createKeyPress(keyCode):
 
 KEYEVENTF_KEYUP = 0x0002
 # returns an INPUT constructed from a KEYBDINPUT KEYBDINPUT defining an input with the given key code and that it is being released
-def createKeyRelease(keyCode):	
+def createKeyRelease(keyCode):
 	# create KEYBDINPUT
 	key_in = INPUTu()
 	key_in.ki = KEYBDINPUT(0, keyCode, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP, 0, None) # 0 argument for virtual-key-code and timestamp, none for extra-info
@@ -120,7 +124,7 @@ def createKeyRelease(keyCode):
 	return INPUT(ki, key_in)
 
 # duration that a key should be held down for
-key_down_dur = 0.1
+key_down_dur = 0.5
 
 
 #def stopShooting():
@@ -139,17 +143,35 @@ def moveLeft():
 	sleep(key_down_dur)
 	SendInputs(createKeyRelease(DIR_A))
 
-
 def moveDown():
 	SendInputs(createKeyPress(DIR_S))
 	sleep(key_down_dur)
 	SendInputs(createKeyRelease(DIR_S))
 
-
 def moveRight():
 	SendInputs(createKeyPress(DIR_D))
 	sleep(key_down_dur)
 	SendInputs(createKeyRelease(DIR_D))
+
+def arrowUp():
+	SendInputs(createKeyPress(DIR_UP))
+	sleep(key_down_dur + 1)
+	SendInputs(createKeyRelease(DIR_UP))
+
+def arrowLeft():
+	SendInputs(createKeyPress(DIR_LEFT))
+	sleep(key_down_dur + 1)
+	SendInputs(createKeyRelease(DIR_LEFT))
+
+def arrowDown():
+	SendInputs(createKeyPress(DIR_DOWN))
+	sleep(key_down_dur + 1)
+	SendInputs(createKeyRelease(DIR_DOWN))
+
+def arrowRight():
+	SendInputs(createKeyPress(DIR_RIGHT))
+	sleep(key_down_dur + 1)
+	SendInputs(createKeyRelease(DIR_RIGHT))
 
 
 #def setMousePos(PosX, PosY):

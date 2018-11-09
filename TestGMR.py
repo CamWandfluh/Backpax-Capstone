@@ -51,7 +51,7 @@ while shouldExit == False:
 
 		if enemyCount > highestEnemyCount:
 			highestEnemyCount = enemyCount
-		
+
 		print("Highest Enemy Count: ", highestEnemyCount)
 
 		print("Lives: ", GMR.getPlayerLives())
@@ -63,7 +63,7 @@ while shouldExit == False:
 		if len(enemyList) > 0:
 			#print("First enemy: ",enemyList[0])
 			for i, enemy in enumerate(enemyList):
-				print("Enemy ", i, " at: (", enemy[1], ", ", enemy[2],")")
+				print("Enemy ", i, " at: (", enemy[1], ", ", enemy[2], enemy[0],")")
 				if enemy[0] == -1:
 					system("pause") # encountered unknown enemy, pause the terminal to view its type
 
