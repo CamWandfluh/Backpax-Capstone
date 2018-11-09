@@ -99,6 +99,7 @@ DIR_LEFT = 0xCB
 DIR_RIGHT = 0xCD
 DIR_DOWN = 0xD0
 DIR_SPACE = 0x39
+DIR_ESC = 0x01
 
 # defines for input type
 mi = ctypes.c_ulong(0)
@@ -172,6 +173,14 @@ def arrowRight():
 	SendInputs(createKeyPress(DIR_RIGHT))
 	sleep(key_down_dur + 1)
 	SendInputs(createKeyRelease(DIR_RIGHT))
+
+def pause():
+	SendInputs(createKeyPress(DIR_ESC))
+	sleep(key_down_dur - 0.3)
+	SendInputs(createKeyRelease(DIR_ESC))
+
+
+
 
 
 #def setMousePos(PosX, PosY):

@@ -3,7 +3,7 @@
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 1
-pop_size              = 5
+pop_size              = 2
 no_fitness_termination = True
 reset_on_extinction   = 0
 
@@ -40,7 +40,8 @@ enabled_default         = True
 enabled_mutate_rate     = 0.01
 
 feed_forward            = True
-initial_connection      = full
+initial_connection      = full_nodirect
+#This can be changed for testing different results
 
 # node add/remove rates
 node_add_prob           = 0.2

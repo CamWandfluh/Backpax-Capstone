@@ -1,6 +1,7 @@
 import random, sys, os, enum
 import numpy as np
 import GameMemoryReader as GMR
+# import ai_input as INPUT
 from player import Ava
 from enemy import Enemys
 from time import sleep
@@ -10,7 +11,7 @@ class GeoWars(object):
     def __init__(self, genomes, config):
 
         self.score = 0
-        self.avaInfo = []
+        self.results = []
         self.avas = [Ava(genome, config) for genome in genomes]
         self.enemy = Enemys()
 
@@ -25,10 +26,9 @@ class GeoWars(object):
 
     #BREAK THIS STUFF OUT INTO MULTIPLE FUNCTIONS
     def on_loop(self):
-
+        index = len(self.avas)
         for ava in self.avas:
 
-            index = 0
             timeSurvived = 0
             #Training each clone until fail then itterating
             while ava.dead == False:
@@ -69,18 +69,19 @@ class GeoWars(object):
                 buffer = GMR.getPlayerLives()
                 numLives = buffer
                 healthCheck = ava.save_results(numLives, self.score)
-                if healthCheck == True:
-                    self.avaInfo.append((('network id', id(ava)), ava.metadata))
-                    print(self.avaInfo)
-                    del self.avas[index]
-                    if len(self.avas) == 0:
-                        avas.extenct = True
+                if healthCheck:
+                    self.results.append(ava.metadata)
 
                 self.score = GMR.getScore() #Game score here
                 self.enemy.enemyList = GMR.getEnemyList() #update enemylist
                 # print('ENEMies', self.enemy.enemyList)
 
-            index += 1
+            GMR.setLives(3)
+            index -= 1
+            if index < 1:
+                return True
+            print('Network #', index)
+            sleep(0.3)
 
 
 if __name__ == '__main__':

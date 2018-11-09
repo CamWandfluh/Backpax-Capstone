@@ -27,7 +27,7 @@ class Ava(object):
 
         # Feed the neural network information
         outputs = self.network.activate(input)
-        print('THIS IS THE OUTPUT', outputs)
+        # print('THIS IS THE OUTPUT', outputs)
 
         # Obtain Prediction
         if outputs[0] > 0.5:

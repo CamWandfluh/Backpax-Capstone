@@ -10,7 +10,7 @@ class GameState(enum.Enum):
 	PLAYING = 2
 	PAUSED = 3
 
-def evolutionary_driver(n=5):
+def evolutionary_driver():
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
@@ -23,9 +23,9 @@ def evolutionary_driver(n=5):
     p.add_reporter(neat.StdOutReporter(False))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=n)
+    winner = p.run(eval_genomes, n=5)
 
-    # dump
+    # saving winner to pkl file
     pickle.dump(winner, open('winner.pkl', 'wb'))
 
 
@@ -36,18 +36,17 @@ def eval_genomes(genomes, config):
 
     learner = GeoWars(genomes, config)
     learner.play()
-    results = learner.crash_info
+    results = learner.results
 
     # Calculate fitness and top score
     top_score = 0
-    for result, genomes in results:
-        print('GENOME', genomes)
-
+    for result in results:
         score = result['score']
-        timeSurvived = results['timeSurvived']
+        timeSurvived = result['timeSurvived']
+        genome = result['genome']
 
         fitness = timeSurvived * 10 + score
-        genomes.fitness = -1 if fitness == 0 else fitness
+        genome.fitness = -1 if fitness == 0 else fitness
         if top_score < score:
             top_score = score
 
