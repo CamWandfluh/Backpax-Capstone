@@ -49,10 +49,6 @@ class Ava(object):
         if outputs[7] > 0.5:
             INPUT.arrowRight()
 
-    def move(self):
-        #NOT SURE YET
-        return
-
     def save_results(self, lives, score):
         self.check_pulse(lives)
 

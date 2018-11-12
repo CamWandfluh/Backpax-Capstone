@@ -23,7 +23,7 @@ def evolutionary_driver():
     p.add_reporter(neat.StdOutReporter(True))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=3)
+    winner = p.run(eval_genomes, n=15)
 
     # saving winner to pkl file
     with open('winner-feedforward', 'wb') as f:
