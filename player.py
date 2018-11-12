@@ -27,9 +27,11 @@ class Ava(object):
 
         # Feed the neural network information
         outputs = self.network.activate(input)
-        # print('THIS IS THE OUTPUT', outputs)
+        print('THIS IS THE OUTPUT', outputs)
 
         # Obtain Prediction
+        INPUT.release_movement_keys()
+        INPUT.release_aim_keys()
         if outputs[0] > 0.5:
             INPUT.moveUp()
         if outputs[1] > 0.5:

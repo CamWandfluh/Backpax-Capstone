@@ -20,13 +20,14 @@ def evolutionary_driver():
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(False))
+    p.add_reporter(neat.StdOutReporter(True))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=5)
+    winner = p.run(eval_genomes, n=3)
 
     # saving winner to pkl file
-    pickle.dump(winner, open('winner.pkl', 'wb'))
+    with open('winner-feedforward', 'wb') as f:
+        pickle.dump(winner, f)
 
 
 def eval_genomes(genomes, config):
@@ -35,6 +36,7 @@ def eval_genomes(genomes, config):
     genome_id, genomes = zip(*genomes)
 
     learner = GeoWars(genomes, config)
+    print(genomes)
     learner.play()
     results = learner.results
 
@@ -45,7 +47,7 @@ def eval_genomes(genomes, config):
         timeSurvived = result['timeSurvived']
         genome = result['genome']
 
-        fitness = timeSurvived * 10 + score
+        fitness = timeSurvived + score * 2
         genome.fitness = -1 if fitness == 0 else fitness
         if top_score < score:
             top_score = score

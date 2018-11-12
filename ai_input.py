@@ -100,6 +100,7 @@ DIR_RIGHT = 0xCD
 DIR_DOWN = 0xD0
 DIR_SPACE = 0x39
 DIR_ESC = 0x01
+DIR_RETURN = 0x1C
 
 # defines for input type
 mi = ctypes.c_ulong(0)
@@ -126,6 +127,7 @@ def createKeyRelease(keyCode):
 
 # duration that a key should be held down for
 key_down_dur = 0.5
+menu_dur = 0.2
 
 
 #def stopShooting():
@@ -133,51 +135,93 @@ key_down_dur = 0.5
 
 #def resumeShooting():
 
+def release_movement_keys():
+	SendInputs(createKeyRelease(DIR_W))
+	SendInputs(createKeyRelease(DIR_A))
+	SendInputs(createKeyRelease(DIR_S))
+	SendInputs(createKeyRelease(DIR_D))
+
+def release_aim_keys():
+	SendInputs(createKeyRelease(DIR_UP))
+	SendInputs(createKeyRelease(DIR_LEFT))
+	SendInputs(createKeyRelease(DIR_DOWN))
+	SendInputs(createKeyRelease(DIR_RIGHT))
+
 
 def moveUp():
 	SendInputs(createKeyPress(DIR_W))
-	sleep(key_down_dur)
-	SendInputs(createKeyRelease(DIR_W))
+
 
 def moveLeft():
 	SendInputs(createKeyPress(DIR_A))
-	sleep(key_down_dur)
-	SendInputs(createKeyRelease(DIR_A))
+
 
 def moveDown():
 	SendInputs(createKeyPress(DIR_S))
-	sleep(key_down_dur)
-	SendInputs(createKeyRelease(DIR_S))
+
 
 def moveRight():
 	SendInputs(createKeyPress(DIR_D))
-	sleep(key_down_dur)
-	SendInputs(createKeyRelease(DIR_D))
+
 
 def arrowUp():
 	SendInputs(createKeyPress(DIR_UP))
-	sleep(key_down_dur + 1)
-	SendInputs(createKeyRelease(DIR_UP))
+
 
 def arrowLeft():
 	SendInputs(createKeyPress(DIR_LEFT))
-	sleep(key_down_dur + 1)
-	SendInputs(createKeyRelease(DIR_LEFT))
+
 
 def arrowDown():
 	SendInputs(createKeyPress(DIR_DOWN))
-	sleep(key_down_dur + 1)
-	SendInputs(createKeyRelease(DIR_DOWN))
+
 
 def arrowRight():
 	SendInputs(createKeyPress(DIR_RIGHT))
-	sleep(key_down_dur + 1)
-	SendInputs(createKeyRelease(DIR_RIGHT))
+
 
 def pause():
 	SendInputs(createKeyPress(DIR_ESC))
 	sleep(key_down_dur - 0.3)
 	SendInputs(createKeyRelease(DIR_ESC))
+
+def enter():
+	SendInputs(createKeyPress(DIR_RETURN))
+	sleep(key_down_dur)
+	SendInputs(createKeyRelease(DIR_RETURN))
+
+def resetGame():
+	SendInputs(createKeyPress(DIR_ESC))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_ESC))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_RETURN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_RETURN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_DOWN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_RETURN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_RETURN))
+	sleep(menu_dur)
+	SendInputs(createKeyPress(DIR_RETURN))
+	sleep(menu_dur)
+	SendInputs(createKeyRelease(DIR_RETURN))
 
 
 
