@@ -23,7 +23,7 @@ def evolutionary_driver():
     p.add_reporter(neat.StdOutReporter(True))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=15)
+    winner = p.run(eval_genomes, n=100)
 
     # saving winner to pkl file
     with open('winner-feedforward', 'wb') as f:
@@ -36,24 +36,19 @@ def eval_genomes(genomes, config):
     genome_id, genomes = zip(*genomes)
 
     learner = GeoWars(genomes, config)
-    print(genomes)
     learner.play()
     results = learner.results
 
-    # Calculate fitness and top score
-    top_score = 0
+    # Calculate fitness
     for result in results:
         score = result['score']
         timeSurvived = result['timeSurvived']
         genome = result['genome']
 
-        fitness = timeSurvived + score * 2
-        genome.fitness = -1 if fitness == 0 else fitness
-        if top_score < score:
-            top_score = score
+        fitness = score / timeSurvived
+        genome.fitness = -1 if fitness < 1 else fitness
+        print('Genome fitness', genome.fitness)
 
-    #print score
-    print('The top score was:', top_score)
 
 def main():
     if (GMR.launchGame() == True):

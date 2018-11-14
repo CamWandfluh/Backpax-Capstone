@@ -10,7 +10,6 @@ class Enemys(object):
         # self.enemyCount = GMR.getEnemyCount()
 
     def get_nearest_enemy(self):
-        self.nearestEnemy = ()
         self.enemyList = GMR.getEnemyList()
         playerCoords = GMR.getPlayerCoords()
         currDistance = 1000

@@ -32,7 +32,7 @@ class GeoWars(object):
             #Training each clone until fail then itterating
             while ava.dead == False:
                 #Locating nearest enemy to pass to input layer
-                sleep(0.5)
+                sleep(0.2)
                 try:
                     enemyCords = self.enemy.get_nearest_enemy()
                     # print('Nearest enemy cords', enemyCords)
@@ -50,9 +50,12 @@ class GeoWars(object):
                 playerCoords = GMR.getPlayerCoords()
                 ava.x = playerCoords[0]
                 ava.y = playerCoords[1]
-                # print('Player X and Y', ava.x, ava.y)
+                # print('Player X and Y', abs(ava.x), abs(ava.y))
 
                 #If enenmy exists make a decision
+                if(abs(ava.x) == 294 and abs(ava.y) == 194):
+                    ava.dead = True
+
                 if len(enemyCords) != 0:
                     ava.decision(enemyCords, enemyAngle)
 
@@ -66,7 +69,7 @@ class GeoWars(object):
                 healthCheck = ava.save_results(numLives, self.score)
                 if healthCheck:
                     self.results.append(ava.metadata)
-                    #print(self.results)
+                    # print(self.results)
 
                 self.score = GMR.getScore() #Game score here
                 self.enemy.enemyList = GMR.getEnemyList() #update enemylist
@@ -78,18 +81,15 @@ class GeoWars(object):
             index -= 1
             if index < 1:
                 return True
-            print('Network #', index)
-            sleep(2)
+            sleep(1.5)
 
     def restart_game(self):
-        # INPUT.pause()
-        # for x in range(3):
-        #     INPUT.arrowDown()
-        # INPUT.enter()
-        # INPUT.arrowDown()
-        # INPUT.enter()
-        # INPUT.enter()
         INPUT.resetGame()
+
+    def check_corners(self, x, y):
+        print(x, y)
+        if(abs(x) == 294 and abs(y) == 194):
+            GMR.setLives(2)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ class Ava(object):
     def __init__(self, genome, config):
 
         self.genome = genome
-        self.network = neat.nn.FeedForwardNetwork.create(genome, config)
+        self.network = neat.nn.RecurrentNetwork.create(genome, config)
 
         self.x = 0
         self.y = 0
@@ -18,18 +18,18 @@ class Ava(object):
         # Setup the input layer
         # ava x,y nearest enemy x,y angle to nearest enemy
         input = (
-            self.x,
-            self.y,
-            enemy[0],
-            enemy[1],
-            angle,
+            10000* self.x,
+            10000* self.y,
+            10000* enemy[0],
+            10000* enemy[1],
+            10000* angle,
         )
 
-        # Feed the neural network information
+        # Get output from network
         outputs = self.network.activate(input)
-        print('THIS IS THE OUTPUT', outputs)
+        # print('THIS IS THE OUTPUT', outputs)
 
-        # Obtain Prediction
+        # Make decision based on output
         INPUT.release_movement_keys()
         INPUT.release_aim_keys()
         if outputs[0] > 0.5:
@@ -45,9 +45,9 @@ class Ava(object):
         if outputs[5] > 0.5:
             INPUT.arrowLeft()
         if outputs[6] > 0.5:
-            INPUT.arrowDown()
-        if outputs[7] > 0.5:
             INPUT.arrowRight()
+        if outputs[7] > 0.5:
+            INPUT.arrowDown()
 
     def save_results(self, lives, score):
         self.check_pulse(lives)
