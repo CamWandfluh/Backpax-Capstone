@@ -32,25 +32,24 @@ class GeoWars(object):
             #Training each clone until fail then itterating
             while ava.dead == False:
                 #Locating nearest enemy to pass to input layer
-                sleep(0.2)
+                sleep(0.1)
+                #Updating player cords for input layer
+                playerCoords = GMR.getPlayerCoords()
+                ava.x = playerCoords[0]
+                ava.y = playerCoords[1]
+
                 try:
                     enemyCords = self.enemy.get_nearest_enemy()
-                    # print('Nearest enemy cords', enemyCords)
+                    # print('Nearest enemy cords ', enemyCords)
                 except:
                     enemyCords = ()
                     print("No enemies are alive")
 
                 try:
                     enemyAngle = self.enemy.get_angle_to_nearest_enemy((ava.x, ava.y), enemyCords)
-                    # print('Angle to nearest enemy', enemyAngle)
+                    # print('Angle to nearest enemy ', enemyAngle)
                 except:
                     enemyAngle = 0
-
-                #Updating player cords for input layer
-                playerCoords = GMR.getPlayerCoords()
-                ava.x = playerCoords[0]
-                ava.y = playerCoords[1]
-                # print('Player X and Y', abs(ava.x), abs(ava.y))
 
                 #If enenmy exists make a decision
                 if(abs(ava.x) == 294 and abs(ava.y) == 194):
