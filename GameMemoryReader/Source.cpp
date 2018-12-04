@@ -25,21 +25,25 @@
 #define SCORE_STATIC_ADDRESS 0x0023C890
 
 /* GAME DATA STRUCTURE
- *	Note that this does not hold the player directly, just information about the player	*/
-#define STATIC_POINTER_TO_GAME_DATA_STRUCT 0x00170074	// pointer used to get to the player data
+ *	Holds the entity list, as well as some other player data	*/
+#define STATIC_POINTER_TO_GAME_DATA_STRUCT 0x00170074	// pointer used to get to the entity linked list, as well as some other information
 //#define OFFSET_TO_PLAYER_POINTER 0x0	// pointer to the player entity, unneeded because the player is the first thing in the game data struct
 #define OFFSET_TO_BOMBS 0x40
 #define OFFSET_TO_LIVES 0x54
 #define OFFSET_TO_SHIELD 0x38
 	/* 4 byte float representing the time remaining on the player's shield */
+
 /* HUD. These offsets are relative to the game data struct.
  *	These coordinates represent the diamond indicator of the mouse cursor when the aim mode is set to "TARGET"
  *	Use these coordinates instead of coordinates returned by some mouse cursor read function to get a more accurate reading of where the player is looking */
 #define OFFSET_TO_CURSOR_X 0x2C
 #define OFFSET_TO_CURSOR_Y 0x30
 
-/* PLAYER ENTITY
- *	use the address at POINTER_TO_PLAYER_DATA_STRUCT and add OFFSET_TO_PLAYER_POINTER and read the resulting address to access the player
+
+
+/* ENTITY STRUCTURE
+ *	use the address at POINTER_TO_GAME_DATA_STRUCT and add OFFSET_TO_PLAYER_POINTER and read the resulting address to access the player. The player is also the head of the entity list
+ *	use OFFSET_TO_NEXT_ENEMY_DOUBLE_POINTER to access the pointer to the next entity in the list
  *	the player ship is of the same type as the enemies in the game */
 #define OFFSET_TO_X_LOCATION 0x4
 #define OFFSET_TO_Y_LOCATION 0x8
@@ -48,10 +52,11 @@
 #define OFFSET_TO_ROTATION 0x14
 #define OFFSET_TO_NEXT_ENEMY_DOUBLE_POINTER 0x5C
 
+
+
 /* ENEMIES */
 #define ENEMY_COUNTER_STATIC_ADDRESS 0x00240738
 /* enemy type/behavior data/function addresses. Unique value to whatever distinct enemy type occupies that structure
- *	uncertain if this is data or a function
  *	can be read to determine the type of enemy */
 #define PINWHEEL 0x004E1444
 #define DIAMOND 0x004E1110
@@ -65,14 +70,20 @@
 #define BLUE_CIRCLE 0x004e12a8 // these spawn when the red circles detonate
 #define BLUE_TRIANGLE 0x004e1194
 
+
+
 // the number of iterations to search for in the enemy loop until its time to abandon ship if all enemies have not been found
 #define ENTITY_LIST_TIMEOUT 250
+
+
 
 // game states
 #define GAME_STATE_STATIC_ADDRESS 0x0023C8C4
 #define GAME_STATE_MAIN_MENU 0
 #define GAME_STATE_PLAYING 2
 #define GAME_STATE_PAUSED 3
+
+
 
 // error codes
 #define DATA_READ_ERROR -300
@@ -233,9 +244,9 @@ bool launchGame()
 	return true;
 }
 
-// takes the address (relative to the executable) in which to read from
 // returns a DWORD (4 bytes) of data from that address in the executable's memory
 // address to read is NOT relative to the game memory start address
+//	* to get data from a static address (relative to the game's base address) : readAddress should be the sum of the relative static address and the game's base address
 GameData getDataFromAddress(DWORD readAddress)
 {
 	DWORD buffer;
@@ -262,9 +273,8 @@ GameData getDataFromAddress(DWORD readAddress)
 	return data;
 }
 
-/* 
-	wraps getDataFromAddress for the purpose of simplifying pointer arithmetic
-		takes a pointer (relative to the game's memory) and returns the address it holds */
+// wraps getDataFromAddress for the purpose of simplifying pointer arithmetic
+//	* takes a pointer (relative to the game's memory) and returns the address it holds
 DWORD deref(DWORD pointer)
 {
 	return getDataFromAddress(pointer).data_dw;
@@ -306,8 +316,7 @@ DWORD getPlayerBaseAddress()
 	return deref(deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress));
 }
 
-/* sets the player's lives to the given value
-	used for giving lives to the player for large training sessions */
+// sets the player's lives to the given value
 void setLives(uint32_t numLives)
 {
 	writeDataToAddress(&numLives, deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_LIVES, sizeof(float));
@@ -323,7 +332,7 @@ void resetPlayerShield()
 	writeDataToAddress(&val, deref(STATIC_POINTER_TO_GAME_DATA_STRUCT + (DWORD)gameProcess.gameBaseAddress) + OFFSET_TO_SHIELD, sizeof(float));
 }
 
-// returns the X coordinate of an entity from the game's runtime memory. This includes the player
+// returns the X coordinate of an entity with given baseAddress
 float getEntityX(DWORD baseAddress)
 {
 	// use the retrieved address to offset to the entity's X location address and read from there

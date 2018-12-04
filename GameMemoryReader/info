@@ -9,4 +9,4 @@ This allows us to call some low level functions from our Python script.
 The program also contains code for starting the game when we want to run our script.
   
 GMR.cfg should contain the path to the game's executable on your system.
-For our purposes, the executable we are using is testapp.exe, rather than GeometryWars.exe, as the former does not need Steam to launch it.
+For our purposes, the executable we are using is testapp.exe, rather than GeometryWars.exe, as GeometryWars.exe requires Steam to launch it.
