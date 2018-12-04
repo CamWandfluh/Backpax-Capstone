@@ -2,8 +2,8 @@ import random, sys, os, enum
 import numpy as np
 import GameMemoryReader as GMR
 import ai_input as INPUT
-from player import Ava
-from enemy import Enemys
+from NEAT.player import Ava
+from NEAT.enemy import Enemys
 from time import sleep
 
 class GeoWars(object):
@@ -16,15 +16,12 @@ class GeoWars(object):
         self.enemy = Enemys()
 
     def play(self):
-
         while True:
             if self.on_loop():
                 return
             else:
                 sys.exit()
 
-
-    #BREAK THIS STUFF OUT INTO MULTIPLE FUNCTIONS
     def on_loop(self):
         index = len(self.avas)
         for ava in self.avas:
@@ -40,14 +37,12 @@ class GeoWars(object):
 
                 try:
                     enemyCords = self.enemy.get_nearest_enemy()
-                    # print('Nearest enemy cords ', enemyCords)
                 except:
                     enemyCords = ()
                     print("No enemies are alive")
 
                 try:
                     enemyAngle = self.enemy.get_angle_to_nearest_enemy((ava.x, ava.y), enemyCords)
-                    # print('Angle to nearest enemy ', enemyAngle)
                 except:
                     enemyAngle = 0
 
@@ -68,11 +63,9 @@ class GeoWars(object):
                 healthCheck = ava.save_results(numLives, self.score)
                 if healthCheck:
                     self.results.append(ava.metadata)
-                    # print(self.results)
 
                 self.score = GMR.getScore() #Game score here
                 self.enemy.enemyList = GMR.getEnemyList() #update enemylist
-                # print('ENEMies', self.enemy.enemyList)
 
             INPUT.release_movement_keys()
             INPUT.release_aim_keys()

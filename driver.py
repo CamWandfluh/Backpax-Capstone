@@ -2,9 +2,9 @@ import sys, enum
 import pickle
 import neat
 import os
-import visualize
+import NEAT.visualize
 from time import sleep
-from geowars import GeoWars
+from NEAT.geowars import GeoWars
 import GameMemoryReader as GMR
 
 class GameState(enum.Enum):
@@ -28,7 +28,7 @@ def evolutionary_driver():
     p.add_reporter(neat.Checkpointer(5))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=50)
+    winner = p.run(eval_genomes, n=3)
 #    pe = neat.ParallelEvaluator(4, eval_genomes)
 #    winner = p.run(pe.evaluate)
 
@@ -48,9 +48,6 @@ def eval_genomes(genomes, config):
 
     # Play game and get results
     genome_id, genomes = zip(*genomes)
-#     for genome in genomes:
-#         print(genome)
-
     learner = GeoWars(genomes, config)
     learner.play()
     results = learner.results
@@ -61,7 +58,7 @@ def eval_genomes(genomes, config):
         timeSurvived = result['timeSurvived']
         genome = result['genome']
 
-        fitness = score / timeSurvived
+        fitness = score + timeSurvived
         genome.fitness = -1 if fitness < 1 else fitness
         print('Genome fitness', genome.fitness)
 

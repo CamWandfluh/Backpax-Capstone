@@ -1,6 +1,7 @@
 import neat
 import ai_input as INPUT
 
+#AVA from exmachina
 class Ava(object):
     def __init__(self, genome, config):
 
@@ -29,7 +30,7 @@ class Ava(object):
         outputs = self.network.activate(input)
         # print('THIS IS THE OUTPUT', outputs)
 
-        # Make decision based on output
+        # Checking outputs agains threshold
         INPUT.release_movement_keys()
         INPUT.release_aim_keys()
         if outputs[0] > 0.5:
