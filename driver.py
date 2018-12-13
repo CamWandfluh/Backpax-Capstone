@@ -1,8 +1,10 @@
 import sys, enum
-import neat
 import pickle
+import neat
+import os
+import NEAT.visualize
 from time import sleep
-from geowars import GeoWars
+from NEAT.geowars import GeoWars
 import GameMemoryReader as GMR
 
 class GameState(enum.Enum):
@@ -21,9 +23,21 @@ def evolutionary_driver():
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(5))
 
     # Run until we achive n.
-    winner = p.run(eval_genomes, n=100)
+    winner = p.run(eval_genomes, n=3)
+#    pe = neat.ParallelEvaluator(4, eval_genomes)
+#    winner = p.run(pe.evaluate)
+
+    # Display the winning genome.
+    print('\nBest genome:\n{!s}'.format(winner))
+
+    visualize.draw_net(config, winner, True)
+    visualize.plot_stats(stats, ylog=False, view=True)
+    visualize.plot_species(stats, view=True)
 
     # saving winner to pkl file
     with open('winner-feedforward', 'wb') as f:
@@ -34,7 +48,6 @@ def eval_genomes(genomes, config):
 
     # Play game and get results
     genome_id, genomes = zip(*genomes)
-
     learner = GeoWars(genomes, config)
     learner.play()
     results = learner.results
@@ -45,7 +58,7 @@ def eval_genomes(genomes, config):
         timeSurvived = result['timeSurvived']
         genome = result['genome']
 
-        fitness = score / timeSurvived
+        fitness = score + timeSurvived
         genome.fitness = -1 if fitness < 1 else fitness
         print('Genome fitness', genome.fitness)
 

@@ -29,9 +29,8 @@ class Enemys(object):
         angle = degrees(atan2(yDiff, xDiff))
         return angle
 
+    def distance(self, player, enemy):
+        return sqrt((player[0] - enemy[0])**2 + (player[1] - enemy[1])**2)
 
     def update_enemy_list(self):
         self.enemyList = GMR.getEnemyList()
-
-    def distance(self, player, enemy):
-        return sqrt((player[0] - enemy[0])**2 + (player[1] - enemy[1])**2)
